@@ -39,7 +39,7 @@ describe('loadConfig', () => {
     it('throws once and lists both problems when LLM_PROVIDER is missing AND LOG_LEVEL is invalid', () => {
         let thrownError: Error | undefined
         try {
-            loadConfig(buildEnv({ LLM_PROVIDER: undefined, LOG_LEVEL: undefined }))
+            loadConfig(buildEnv({ LLM_PROVIDER: undefined, LOG_LEVEL: "verbose" }))
         } catch (e) {
             thrownError = e as Error
         }
