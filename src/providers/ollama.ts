@@ -1,5 +1,5 @@
 import type { OllamaConfig } from "../config/types.js";
-import { fetchWithTimeout, generateChatResponse } from "./utils.js";
+import { fetchWithTimeout } from "./utils.js";
 import { DEFAULT_TEMPERATURE, type ChatMessage, type ChatOptions, type ChatResponse, ProviderError, DEFAULT_TIMEOUT_MS } from "./types.js";
 
 export class OllamaProvider {
@@ -48,7 +48,7 @@ export class OllamaProvider {
                 throw new ProviderError('invalid_response', 'Ollama server returned an invalid response')
             }
 
-            return generateChatResponse('ollama', data) as ChatResponse
+            return this.mapOllamaResponse(data)
         } catch (err) {
 
             if (err instanceof Error && err.name === 'AbortError') {
@@ -60,6 +60,23 @@ export class OllamaProvider {
             }
 
             throw new ProviderError('network', 'Failed to reach Ollama', err)
+        }
+    }
+
+    private mapOllamaResponse(data: any): ChatResponse {
+        const promptTokens = typeof data?.prompt_eval_count === 'number' ? data.prompt_eval_count : undefined;
+        const completionTokens = typeof data?.eval_count === 'number' ? data.eval_count : undefined;
+        const totalTokens = promptTokens !== undefined && completionTokens !== undefined
+            ? promptTokens + completionTokens
+            : undefined;
+
+        return {
+            model: data.model,
+            content: data?.message?.content ?? "",
+            finishReason: data?.done_reason === 'length' ? 'length' : 'stop',
+            usage: {
+                promptTokens, completionTokens, totalTokens
+            }
         }
     }
 

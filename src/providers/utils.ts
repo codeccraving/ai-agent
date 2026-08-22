@@ -14,23 +14,3 @@ export async function fetchWithTimeout(
     clearTimeout(timer);
   }
 }
-
-export function generateChatResponse(provider: Provider, data: any): ChatResponse | null {
-
-  switch (provider) {
-    case 'ollama':
-      return {
-        model: data.model,
-        content: data?.message?.content ?? "",
-        finishReason: data?.done_reason === 'length' ? 'length' : 'stop',
-        usage: {
-          promptTokens: data?.prompt_eval_count,
-          completionTokens: data?.eval_count,
-          totalTokens: (data?.prompt_eval_count ?? 0) + (data?.eval_count ?? 0)
-        }
-      }
-    default:
-      return null
-  }
-
-}
