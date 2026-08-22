@@ -1,5 +1,4 @@
-import type { Provider } from "../config/types.js";
-import { DEFAULT_TIMEOUT_MS, type ChatResponse } from "./types.js";
+import { DEFAULT_TIMEOUT_MS } from "./types.js";
 
 export async function fetchWithTimeout(
   url: string,

@@ -1,5 +1,3 @@
-export type Provider = 'ollama'
-
 export type LogLevel = 'debug' | 'info' | 'warn' | 'error'
 
 export interface OllamaConfig {
@@ -9,7 +7,7 @@ export interface OllamaConfig {
 
 export interface AppConfig {
     llm: {
-        provider: Provider
+        provider: string
         ollama: OllamaConfig
     }
     logging: {

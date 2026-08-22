@@ -1,4 +1,4 @@
-import type { AppConfig, LogLevel, Provider } from "./types.js";
+import type { AppConfig, LogLevel } from "./types.js";
 
 export function loadConfig(env: NodeJS.ProcessEnv = process.env): AppConfig {
 
@@ -6,7 +6,7 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): AppConfig {
 
     const confg = {
         llm: {
-            provider: env.LLM_PROVIDER as Provider,
+            provider: env.LLM_PROVIDER as string,
             ollama: {
                 baseUrl: env.OLLAMA_BASE_URL as string,
                 model: env.OLLAMA_MODEL as string
