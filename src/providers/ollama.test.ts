@@ -31,7 +31,7 @@ describe('OllamaProvider', () => {
     beforeEach(() => {
         fetchMock = vi.fn()
         vi.stubGlobal('fetch', fetchMock)
-        provider = new OllamaProvider({ baseUrl: 'http://localhost:11434', model: 'llama3' })
+        provider = new OllamaProvider({ OLLAMA_MODEL: 'llama3' })
     });
 
     afterEach(() => {
@@ -104,10 +104,14 @@ describe('OllamaProvider', () => {
         fetchMock.mockRejectedValueOnce(abortError);
         await expect(provider.chat([{ role: 'user', content: 'hi' }])).rejects.toMatchObject({ code: 'timeout' });
     });
+
+    it('applies the OLLAMA_BASE_URL default when omitted', () => {
+        expect(provider.baseUrl).toBe("http://localhost:11434")
+    })
 })
 
 describe('createProvider', () => {
-    const baseConfig = { llm: { provider: 'ollama', ollama: { baseUrl: 'http://localhost:11434', model: 'llama3' } }, logging: { level: 'info' } } as AppConfig;
+    let baseConfig = { llm: { provider: 'ollama', raw: { OLLAMA_MODEL: 'llama3' } }, logging: { level: 'info' } } as AppConfig;
 
     it('returns an OllamaProvider for "ollama"', () => {
         expect(createProvider(baseConfig)).toBeInstanceOf(OllamaProvider);
@@ -117,4 +121,15 @@ describe('createProvider', () => {
         const badConfig = { ...baseConfig, llm: { ...baseConfig.llm, provider: 'bogus' as any } };
         expect(() => createProvider(badConfig)).toThrow(ProviderError);
     });
+
+    it('throws with a message naming the invalid value when LLM_PROVIDER is unknown', () => {
+        const badConfig = { ...baseConfig, llm: { ...baseConfig.llm, provider: "foo" } }
+        expect(() => createProvider(badConfig)).toThrow(/foo/)
+    });
+
+    it('throws when OLLAMA_MODEL is missing, and names it in the message', () => {
+        const badConfig = { ...baseConfig, llm: { ...baseConfig.llm, raw: { ...baseConfig.llm.raw, OLLAMA_MODEL: undefined } } }
+        expect(() => createProvider(badConfig)).toThrow(/OLLAMA_MODEL/)
+    })
+
 });

@@ -7,31 +7,15 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): AppConfig {
     const confg = {
         llm: {
             provider: env.LLM_PROVIDER as string,
-            ollama: {
-                baseUrl: env.OLLAMA_BASE_URL as string,
-                model: env.OLLAMA_MODEL as string
-            }
+            raw: env
         },
         logging: {
             level: env.LOG_LEVEL as LogLevel
         }
     }
 
-    //Checks
-    Provider: switch (confg.llm.provider) {
-        case "ollama":
-
-            if (!confg.llm.ollama.model) {
-                errors.push("OLLAMA_MODEL is required when LLM_PROVIDER=ollama")
-            }
-
-            if (!confg.llm.ollama.baseUrl) {
-                confg.llm.ollama.baseUrl = "http://localhost:11434"
-            }
-
-            break Provider
-        default:
-            errors.push(`LLM_PROVIDER must be one of ollama, got ${confg.llm.provider}`)
+    if (!confg.llm.provider) {
+        errors.push("LLM_PROVIDER is required")
     }
 
     LogLevel: switch (confg.logging.level) {

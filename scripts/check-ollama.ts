@@ -14,7 +14,7 @@ async function checkOllama() {
     }
 
     try {
-        const response = await fetch(`${config.llm.ollama.baseUrl}/api/tags`)
+        const response = await fetch(`${config.llm.raw.OLLAMA_BASE_URL}/api/tags`)
 
         if (!response.ok) {
             throw new Error(`Ollama server returned status ${response.status}`)
@@ -22,8 +22,8 @@ async function checkOllama() {
 
         const data = await response.json()
 
-        if (!JSON.stringify(data).match(new RegExp(`"${config.llm.ollama.model}"`))) {
-            console.error(`Model ${config.llm.ollama.model} not found in available tags`)
+        if (!JSON.stringify(data).match(new RegExp(`"${config.llm.raw.OLLAMA_MODEL}"`))) {
+            console.error(`Model ${config.llm.raw.OLLAMA_MODEL} not found in available tags`)
             process.exit(1)
         }
 

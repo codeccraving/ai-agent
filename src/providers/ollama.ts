@@ -1,25 +1,32 @@
-import type { OllamaConfig } from "../config/types.js";
 import { fetchWithTimeout } from "./utils.js";
 import { DEFAULT_TEMPERATURE, type ChatMessage, type ChatOptions, type ChatResponse, ProviderError, DEFAULT_TIMEOUT_MS } from "./types.js";
 
 export class OllamaProvider {
 
     readonly name: string
+    readonly baseUrl: string
+    readonly model: string
 
-    constructor(private readonly config: OllamaConfig) {
+    constructor(private readonly config: NodeJS.ProcessEnv) {
         this.name = "ollama"
+        this.baseUrl = config.OLLAMA_BASE_URL ?? "http://localhost:11434"
+        this.model = config.OLLAMA_MODEL as string
+        
+        if (!this.model) {
+            throw new ProviderError('invalid_request', 'Please set OLLAMA_MODEL to a valid model name.')
+        }
     }
 
     async chat(messages: ChatMessage[], options?: ChatOptions): Promise<ChatResponse> {
-
         try {
-            const response = await fetchWithTimeout(`${this.config.baseUrl}/api/chat`, {
+
+            const response = await fetchWithTimeout(`${this.baseUrl}/api/chat`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json'
                 },
                 body: JSON.stringify({
-                    model: this.config.model,
+                    model: this.model,
                     messages,
                     stream: false,
                     options: {
@@ -31,7 +38,7 @@ export class OllamaProvider {
 
             if (!response.ok) {
                 if (response.status === 404) {
-                    throw new ProviderError('model_not_found', `Model ${this.config.model} not found on Ollama server`)
+                    throw new ProviderError('model_not_found', `Model ${this.model} not found on Ollama server`)
                 }
 
                 throw new ProviderError(response.status < 500 ? 'invalid_request' : 'unknown', `Ollama server returned status ${response.status}`)
@@ -51,12 +58,12 @@ export class OllamaProvider {
             return this.mapOllamaResponse(data)
         } catch (err) {
 
-            if (err instanceof Error && err.name === 'AbortError') {
-                throw new ProviderError('timeout', `Ollama request timed out after ${DEFAULT_TIMEOUT_MS}ms`, err)
-            }
-
             if (err instanceof ProviderError) {
                 throw err
+            }
+
+            if (err instanceof Error && err.name === 'AbortError') {
+                throw new ProviderError('timeout', `Ollama request timed out after ${DEFAULT_TIMEOUT_MS}ms`, err)
             }
 
             throw new ProviderError('network', 'Failed to reach Ollama', err)
