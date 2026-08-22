@@ -1,4 +1,4 @@
-import type { AppConfig, LogLevels, Providers } from "./types.js";
+import type { AppConfig, LogLevel, Provider } from "./types.js";
 
 export function loadConfig(env: NodeJS.ProcessEnv = process.env): AppConfig {
 
@@ -6,19 +6,19 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): AppConfig {
 
     const confg = {
         llm: {
-            provider: env.LLM_PROVIDER as Providers,
+            provider: env.LLM_PROVIDER as Provider,
             ollama: {
                 baseUrl: env.OLLAMA_BASE_URL as string,
                 model: env.OLLAMA_MODEL as string
             }
         },
         logging: {
-            level: env.LOG_LEVEL as LogLevels
+            level: env.LOG_LEVEL as LogLevel
         }
     }
 
     //Checks
-    Providers: switch (confg.llm.provider) {
+    Provider: switch (confg.llm.provider) {
         case "ollama":
 
             if (!confg.llm.ollama.model) {
@@ -29,17 +29,17 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): AppConfig {
                 confg.llm.ollama.baseUrl = "http://localhost:11434"
             }
 
-            break Providers
+            break Provider
         default:
             errors.push(`LLM_PROVIDER must be one of ollama, got ${confg.llm.provider}`)
     }
 
-    LogLevels: switch (confg.logging.level) {
+    LogLevel: switch (confg.logging.level) {
         case "debug":
         case "info":
         case "warn":
         case "error":
-            break LogLevels
+            break LogLevel
         default:
             errors.push(`LOG_LEVEL must be one of debug|info|warn|error, got ${confg.logging.level}`)
     }
