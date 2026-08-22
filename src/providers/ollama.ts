@@ -30,18 +30,11 @@ export class OllamaProvider {
             })
 
             if (!response.ok) {
-
-                switch (response.status) {
-                    case 400:
-                        throw new ProviderError('invalid_request', `Ollama server returned status ${response.status}`)
-                    case 404:
-                        throw new ProviderError('model_not_found', `Model ${this.config.model} not found on Ollama server`)
-                    case 500:
-                        throw new ProviderError('unknown', `Ollama server returned status ${response.status}`)
-                    default:
-                        throw new ProviderError('invalid_response', `Ollama server returned status ${response.status}`)
+                if (response.status === 404) {
+                    throw new ProviderError('model_not_found', `Model ${this.config.model} not found on Ollama server`)
                 }
 
+                throw new ProviderError(response.status < 500 ? 'invalid_request' : 'unknown', `Ollama server returned status ${response.status}`)
             }
 
             let data: any

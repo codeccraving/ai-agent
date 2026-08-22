@@ -22,11 +22,11 @@ export function generateChatResponse(provider: Provider, data: any): ChatRespons
       return {
         model: data.model,
         content: data?.message?.content ?? "",
-        finishReason: data?.done_reason ?? "stop",
+        finishReason: data?.done_reason === 'length' ? 'length' : 'stop',
         usage: {
           promptTokens: data?.prompt_eval_count,
           completionTokens: data?.eval_count,
-          totalTokens: data?.prompt_eval_count + data?.eval_count
+          totalTokens: (data?.prompt_eval_count ?? 0) + (data?.eval_count ?? 0)
         }
       }
     default:
