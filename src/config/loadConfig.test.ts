@@ -1,6 +1,6 @@
 // src/config/loadConfig.test.ts
 import { describe, it, expect } from 'vitest';
-import { loadConfig } from './loadConfig.js';
+import { DEFAULT_SYSTEM_PROMPT, loadConfig } from './loadConfig.js';
 
 // Baseline valid env — each test overrides only what it's testing
 function buildEnv(overrides: Record<string, string | undefined> = {}) {
@@ -26,6 +26,9 @@ describe('loadConfig', () => {
                     OLLAMA_MODEL: 'llama3',
                 },
             },
+            agent: {
+                systemPrompt: DEFAULT_SYSTEM_PROMPT,
+            },
             logging: {
                 level: 'info',
             },
@@ -42,5 +45,17 @@ describe('loadConfig', () => {
         expect(thrownError).toBeDefined()
         expect(thrownError!.message).toContain("LLM_PROVIDER")
         expect(thrownError!.message).toContain("LOG_LEVEL")
+    })
+
+    it('uses AGENT_SYSTEM_PROMPT when it is set', () => {
+        const config = loadConfig(buildEnv({ AGENT_SYSTEM_PROMPT: 'You are a pirate.' }))
+
+        expect(config.agent.systemPrompt).toBe('You are a pirate.')
+    })
+
+    it('falls back to DEFAULT_SYSTEM_PROMPT when AGENT_SYSTEM_PROMPT is unset', () => {
+        const config = loadConfig(buildEnv({ AGENT_SYSTEM_PROMPT: undefined }))
+
+        expect(config.agent.systemPrompt).toBe(DEFAULT_SYSTEM_PROMPT)
     })
 });

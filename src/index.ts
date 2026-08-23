@@ -1,5 +1,5 @@
 import { loadEnvFile } from 'node:process';
-import { startRepl } from './cli/repl.js';
+import { AgentREPL } from './cli/repl.js';
 
 loadEnvFile()
-startRepl()
+new AgentREPL()

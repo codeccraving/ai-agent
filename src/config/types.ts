@@ -5,6 +5,9 @@ export interface AppConfig {
         provider: string
         raw: NodeJS.ProcessEnv
     }
+    agent: {
+        systemPrompt: string
+    }
     logging: {
         level: LogLevel
     }
