@@ -55,6 +55,7 @@ export class AgentREPL {
         //Typed exit: check the trimmed line inside your 'line' handler, call rl.close()
         if (message === "exit") {
             this.exit()
+            return
         }
 
         //Append the user message to the conversation history
