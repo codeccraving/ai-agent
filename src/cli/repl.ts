@@ -4,6 +4,7 @@ import * as readline from 'node:readline';
 import { createProvider } from "../providers/factory.js";
 import { appendAssistantMessage, appendUserMessage, createConversation, removeLastMessage, toMessages, type Conversation } from "../agent/conversation.js";
 import type { ChatProvider } from "../providers/types.js";
+import { truncateToFit } from "../agent/contextWindow.js";
 
 export class AgentREPL {
 
@@ -60,8 +61,9 @@ export class AgentREPL {
 
         //Append the user message to the conversation history
         appendUserMessage(this.conversation, message)
+        truncateToFit(this.conversation, this.config.agent.maxContextTokens) //Truncate the conversation to fit within the max context tokens
         this.rl.pause() //Pause the prompt while waiting for the provider response
-    
+
         //Call the provider's chat method with the conversation messages, handle the response, and re-prompt
         this.provider.chat(toMessages(this.conversation)).then((response) => {
             appendAssistantMessage(this.conversation, response.content) //Append the assistant's response to the conversation history

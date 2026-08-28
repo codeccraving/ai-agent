@@ -7,6 +7,7 @@ export interface AppConfig {
     }
     agent: {
         systemPrompt: string
+        maxContextTokens: number
     }
     logging: {
         level: LogLevel

@@ -1,6 +1,7 @@
 import type { AppConfig, LogLevel } from "./types.js";
 
 export const DEFAULT_SYSTEM_PROMPT = "You are a helpful AI assistant. Answer the user's questions to the best of your ability."
+export const DEFAULT_MAX_CONTEXT_TOKENS = 8000
 
 export function loadConfig(env: NodeJS.ProcessEnv = process.env): AppConfig {
 
@@ -12,7 +13,8 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): AppConfig {
             raw: env
         },
         agent: {
-            systemPrompt: env.AGENT_SYSTEM_PROMPT || DEFAULT_SYSTEM_PROMPT
+            systemPrompt: env.AGENT_SYSTEM_PROMPT || DEFAULT_SYSTEM_PROMPT,
+            maxContextTokens: parseInt(env.AGENT_MAX_CONTEXT_TOKENS as string) || DEFAULT_MAX_CONTEXT_TOKENS
         },
         logging: {
             level: env.LOG_LEVEL as LogLevel

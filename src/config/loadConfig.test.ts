@@ -1,6 +1,6 @@
 // src/config/loadConfig.test.ts
 import { describe, it, expect } from 'vitest';
-import { DEFAULT_SYSTEM_PROMPT, loadConfig } from './loadConfig.js';
+import { DEFAULT_SYSTEM_PROMPT, loadConfig, DEFAULT_MAX_CONTEXT_TOKENS } from './loadConfig.js';
 
 // Baseline valid env — each test overrides only what it's testing
 function buildEnv(overrides: Record<string, string | undefined> = {}) {
@@ -28,6 +28,7 @@ describe('loadConfig', () => {
             },
             agent: {
                 systemPrompt: DEFAULT_SYSTEM_PROMPT,
+                maxContextTokens: DEFAULT_MAX_CONTEXT_TOKENS,
             },
             logging: {
                 level: 'info',
