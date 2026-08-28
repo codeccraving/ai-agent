@@ -59,4 +59,61 @@ describe('loadConfig', () => {
 
         expect(config.agent.systemPrompt).toBe(DEFAULT_SYSTEM_PROMPT)
     })
+
+    it('uses AGENT_MAX_CONTEXT_TOKENS when it is set', () => {
+        const config = loadConfig(buildEnv({ AGENT_MAX_CONTEXT_TOKENS: '4000' }))
+
+        expect(config.agent.maxContextTokens).toBe(4000)
+    })
+
+    it('falls back to DEFAULT_MAX_CONTEXT_TOKENS when AGENT_MAX_CONTEXT_TOKENS is unset', () => {
+        const config = loadConfig(buildEnv({ AGENT_MAX_CONTEXT_TOKENS: undefined }))
+
+        expect(config.agent.maxContextTokens).toBe(DEFAULT_MAX_CONTEXT_TOKENS)
+    })
+
+    it('rejects a non-numeric AGENT_MAX_CONTEXT_TOKENS', () => {
+        let thrownError: Error | undefined
+        try {
+            loadConfig(buildEnv({ AGENT_MAX_CONTEXT_TOKENS: 'abc' }))
+        } catch (e) {
+            thrownError = e as Error
+        }
+        expect(thrownError).toBeDefined()
+        expect(thrownError!.message).toContain("AGENT_MAX_CONTEXT_TOKENS")
+    })
+
+    it('rejects a zero AGENT_MAX_CONTEXT_TOKENS', () => {
+        let thrownError: Error | undefined
+        try {
+            loadConfig(buildEnv({ AGENT_MAX_CONTEXT_TOKENS: '0' }))
+        } catch (e) {
+            thrownError = e as Error
+        }
+        expect(thrownError).toBeDefined()
+        expect(thrownError!.message).toContain("AGENT_MAX_CONTEXT_TOKENS")
+    })
+
+    it('rejects a negative AGENT_MAX_CONTEXT_TOKENS', () => {
+        let thrownError: Error | undefined
+        try {
+            loadConfig(buildEnv({ AGENT_MAX_CONTEXT_TOKENS: '-500' }))
+        } catch (e) {
+            thrownError = e as Error
+        }
+        expect(thrownError).toBeDefined()
+        expect(thrownError!.message).toContain("AGENT_MAX_CONTEXT_TOKENS")
+    })
+
+    it('throws once and lists both problems when LOG_LEVEL is invalid AND AGENT_MAX_CONTEXT_TOKENS is invalid', () => {
+        let thrownError: Error | undefined
+        try {
+            loadConfig(buildEnv({ LOG_LEVEL: 'verbose', AGENT_MAX_CONTEXT_TOKENS: '-1' }))
+        } catch (e) {
+            thrownError = e as Error
+        }
+        expect(thrownError).toBeDefined()
+        expect(thrownError!.message).toContain("LOG_LEVEL")
+        expect(thrownError!.message).toContain("AGENT_MAX_CONTEXT_TOKENS")
+    })
 });

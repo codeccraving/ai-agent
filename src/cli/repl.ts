@@ -61,7 +61,12 @@ export class AgentREPL {
 
         //Append the user message to the conversation history
         appendUserMessage(this.conversation, message)
-        truncateToFit(this.conversation, this.config.agent.maxContextTokens) //Truncate the conversation to fit within the max context tokens
+        
+        const droppedPairs = truncateToFit(this.conversation, this.config.agent.maxContextTokens) //Truncate the conversation to fit within the max context tokens
+        if (droppedPairs > 0) {
+            console.log(`Dropped ${droppedPairs} old turn${droppedPairs > 1 ? 's' : ''} to fit within max context tokens.`)
+        }
+
         this.rl.pause() //Pause the prompt while waiting for the provider response
 
         //Call the provider's chat method with the conversation messages, handle the response, and re-prompt

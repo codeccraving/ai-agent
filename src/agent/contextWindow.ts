@@ -22,10 +22,6 @@ export function truncateToFit(conversation: Conversation, maxTokens: number): nu
         droppedPairs++
     }
 
-    if(droppedPairs > 0) {
-        console.log(`Dropped ${droppedPairs} old turn${droppedPairs > 1 ? 's' : ''} to fit within max context tokens.`)
-    }
-
     return droppedPairs
 
 }

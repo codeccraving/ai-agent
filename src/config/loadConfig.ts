@@ -6,6 +6,13 @@ export const DEFAULT_MAX_CONTEXT_TOKENS = 8000
 export function loadConfig(env: NodeJS.ProcessEnv = process.env): AppConfig {
 
     const errors: string[] = []
+    let maxContextTokens
+
+    if (env.AGENT_MAX_CONTEXT_TOKENS === undefined) {
+        maxContextTokens = DEFAULT_MAX_CONTEXT_TOKENS
+    } else {
+        maxContextTokens = parseInt(env.AGENT_MAX_CONTEXT_TOKENS as string)
+    }
 
     const confg = {
         llm: {
@@ -14,7 +21,7 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): AppConfig {
         },
         agent: {
             systemPrompt: env.AGENT_SYSTEM_PROMPT || DEFAULT_SYSTEM_PROMPT,
-            maxContextTokens: parseInt(env.AGENT_MAX_CONTEXT_TOKENS as string) || DEFAULT_MAX_CONTEXT_TOKENS
+            maxContextTokens
         },
         logging: {
             level: env.LOG_LEVEL as LogLevel
@@ -23,6 +30,10 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): AppConfig {
 
     if (!confg.llm.provider) {
         errors.push("LLM_PROVIDER is required")
+    }
+
+    if (Number.isNaN(confg.agent.maxContextTokens) || confg.agent.maxContextTokens <= 0) {
+        errors.push("AGENT_MAX_CONTEXT_TOKENS must be a numeric value and greater than 0")
     }
 
     LogLevel: switch (confg.logging.level) {
