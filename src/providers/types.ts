@@ -1,16 +1,40 @@
-export type ChatRole = 'system' | 'user' | 'assistant'
+export type ChatRole = 'system' | 'user' | 'assistant' | 'tool'
+
+export interface JSONSchema {
+    type?: 'string' | 'integer' | 'boolean' | 'number' | 'object' | 'array'
+    properties?: Record<string, JSONSchema>
+    required?: string[]
+    items?: JSONSchema
+    enum?: unknown[]
+    description?: string
+    [key: string]: unknown
+}
+
+export interface ToolDefinition {
+    name: string
+    description: string
+    parameters: JSONSchema
+}
+
+export interface ToolCall {
+    name: string
+    arguments: Record<string, unknown>
+}
 
 export interface ChatMessage {
     role: ChatRole
     content: string
+    toolCalls?: ToolCall[]   // present on assistant messages that requested tool calls
+    toolName?: string        // present on tool-role messages: which tool this result came from
 }
 
 export interface ChatOptions {
     temperature?: number
     maxTokens?: number
+    tools?: ToolDefinition[]
 }
 
-export type FinishReason = 'stop' | 'length' | 'error'
+export type FinishReason = 'stop' | 'length' | 'error' | 'tool_calls'
 
 export interface ChatResponse {
     content: string
@@ -21,6 +45,7 @@ export interface ChatResponse {
         completionTokens?: number
         totalTokens?: number
     }
+    toolCalls?: ToolCall[]
 }
 
 export interface ChatProvider {

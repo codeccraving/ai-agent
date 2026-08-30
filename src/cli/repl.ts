@@ -5,6 +5,10 @@ import { createProvider } from "../providers/factory.js";
 import { appendAssistantMessage, appendUserMessage, createConversation, removeLastMessage, toMessages, type Conversation } from "../agent/conversation.js";
 import type { ChatProvider } from "../providers/types.js";
 import { truncateToFit } from "../agent/contextWindow.js";
+import { ToolRegistry } from "../tools/registry.js";
+import { calculatorTool } from "../tools/lib/calculator/index.js";
+import { registerEnabledTools } from "../tools/registerEnabledTools.js";
+import { buildToolFollowupMessages } from "../agent/toolExchange.js";
 
 export class AgentREPL {
 
@@ -12,6 +16,7 @@ export class AgentREPL {
     private config: AppConfig
     private provider: ChatProvider
     private conversation: Conversation
+    private toolRegistry: ToolRegistry
 
     constructor() {
         try {
@@ -32,6 +37,15 @@ export class AgentREPL {
         //Events
         this.rl.on("SIGINT", this.exit.bind(this)) //Ctrl+C (SIGINT): readline interfaces emit their own 'SIGINT'
         this.rl.on("line", this.onLineInputFn.bind(this))
+
+        //Tools Registry
+        this.toolRegistry = new ToolRegistry
+        registerEnabledTools(
+            this.toolRegistry,
+            [
+                calculatorTool
+            ], //Tools catalog. All tools must be present in this catalog array
+            this.config.tools.enabled)
 
         //Startup messages
         console.log(`Agent scaffolding ready (provider: ${this.config.llm.provider})`)
@@ -61,7 +75,7 @@ export class AgentREPL {
 
         //Append the user message to the conversation history
         appendUserMessage(this.conversation, message)
-        
+
         const droppedPairs = truncateToFit(this.conversation, this.config.agent.maxContextTokens) //Truncate the conversation to fit within the max context tokens
         if (droppedPairs > 0) {
             console.log(`Dropped ${droppedPairs} old turn${droppedPairs > 1 ? 's' : ''} to fit within max context tokens.`)
@@ -70,7 +84,17 @@ export class AgentREPL {
         this.rl.pause() //Pause the prompt while waiting for the provider response
 
         //Call the provider's chat method with the conversation messages, handle the response, and re-prompt
-        this.provider.chat(toMessages(this.conversation)).then((response) => {
+        this.provider.chat(toMessages(this.conversation), { tools: this.toolRegistry.getToolDefinitions() }).then(async (response) => {
+
+            if (response.finishReason === "tool_calls" && response.toolCalls?.length) {
+                const toolCallResults = await Promise.all(response.toolCalls?.map(call => this.toolRegistry.execute(call)))
+                const followUpMessages = buildToolFollowupMessages(toMessages(this.conversation), response.content, response.toolCalls, toolCallResults)
+                const final = await this.provider.chat(followUpMessages, { tools: this.toolRegistry.getToolDefinitions() })
+                appendAssistantMessage(this.conversation, final.content)
+                console.log(final.content)
+                return
+            }
+
             appendAssistantMessage(this.conversation, response.content) //Append the assistant's response to the conversation history
             console.log(response.content) //Print the assistant's response to the console
         }).catch(e => {

@@ -23,7 +23,7 @@ describe('loadConfig', () => {
                 raw: {
                     LLM_PROVIDER: 'ollama',
                     LOG_LEVEL: 'info',
-                    OLLAMA_MODEL: 'llama3',
+                    OLLAMA_MODEL: 'llama3'
                 },
             },
             agent: {
@@ -33,6 +33,9 @@ describe('loadConfig', () => {
             logging: {
                 level: 'info',
             },
+            tools: {
+                enabled: []
+            }
         })
     })
 

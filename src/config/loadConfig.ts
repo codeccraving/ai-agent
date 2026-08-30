@@ -8,13 +8,14 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): AppConfig {
     const errors: string[] = []
     let maxContextTokens
 
-    if (env.AGENT_MAX_CONTEXT_TOKENS === undefined) {
+    if (env.AGENT_MAX_CONTEXT_TOKENS === "" || env.AGENT_MAX_CONTEXT_TOKENS === undefined) {
         maxContextTokens = DEFAULT_MAX_CONTEXT_TOKENS
     } else {
         maxContextTokens = parseInt(env.AGENT_MAX_CONTEXT_TOKENS as string)
     }
 
-    const confg = {
+
+    const confg: AppConfig = {
         llm: {
             provider: env.LLM_PROVIDER as string,
             raw: env
@@ -25,7 +26,15 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): AppConfig {
         },
         logging: {
             level: env.LOG_LEVEL as LogLevel
+        },
+        tools: {
+            enabled: []
         }
+    }
+
+    const enabledTools = env.AGENT_ENABLED_TOOLS
+    if (enabledTools !== undefined) {
+        confg.tools.enabled = enabledTools.split(",").map(v => v.trim())
     }
 
     if (!confg.llm.provider) {

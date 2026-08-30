@@ -1,5 +1,5 @@
 import { fetchWithTimeout } from "./utils.js";
-import { DEFAULT_TEMPERATURE, type ChatMessage, type ChatOptions, type ChatResponse, ProviderError, DEFAULT_TIMEOUT_MS } from "./types.js";
+import { DEFAULT_TEMPERATURE, type ChatMessage, type ChatOptions, type ChatResponse, ProviderError, DEFAULT_TIMEOUT_MS, type FinishReason, type ToolCall } from "./types.js";
 
 export class OllamaProvider {
 
@@ -11,7 +11,7 @@ export class OllamaProvider {
         this.name = "ollama"
         this.baseUrl = config.OLLAMA_BASE_URL ?? "http://localhost:11434"
         this.model = config.OLLAMA_MODEL as string
-        
+
         if (!this.model) {
             throw new ProviderError('invalid_request', 'Please set OLLAMA_MODEL to a valid model name.')
         }
@@ -20,20 +20,30 @@ export class OllamaProvider {
     async chat(messages: ChatMessage[], options?: ChatOptions): Promise<ChatResponse> {
         try {
 
+            const body: any = {
+                model: this.model,
+                messages,
+                stream: false,
+                think: false,
+                options: {
+                    temperature: options?.temperature ?? DEFAULT_TEMPERATURE,
+                    num_predict: options?.maxTokens
+                }
+            }
+
+            if (options?.tools?.length) {
+                body["tools"] = options.tools.map(tool => ({
+                    type: "function",
+                    function: tool
+                }))
+            }
+
             const response = await fetchWithTimeout(`${this.baseUrl}/api/chat`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json'
                 },
-                body: JSON.stringify({
-                    model: this.model,
-                    messages,
-                    stream: false,
-                    options: {
-                        temperature: options?.temperature ?? DEFAULT_TEMPERATURE,
-                        num_predict: options?.maxTokens
-                    }
-                })
+                body: JSON.stringify(body)
             })
 
             if (!response.ok) {
@@ -77,13 +87,28 @@ export class OllamaProvider {
             ? promptTokens + completionTokens
             : undefined;
 
+        let finishReason: FinishReason = data?.done_reason === 'length' ? 'length' : 'stop'
+        const toolCalls: ToolCall[] = []
+
+        if (data?.message?.tool_calls?.length > 0) {
+            finishReason = "tool_calls"
+
+            for (const toolCall of data?.message?.tool_calls) {
+                toolCalls.push({
+                    name: toolCall?.function?.name,
+                    arguments: toolCall?.function?.arguments
+                })
+            }
+        }
+
         return {
             model: data.model,
             content: data?.message?.content ?? "",
-            finishReason: data?.done_reason === 'length' ? 'length' : 'stop',
+            finishReason,
             usage: {
                 promptTokens, completionTokens, totalTokens
-            }
+            },
+            toolCalls
         }
     }
 

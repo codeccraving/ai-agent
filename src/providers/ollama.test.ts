@@ -111,7 +111,18 @@ describe('OllamaProvider', () => {
 })
 
 describe('createProvider', () => {
-    let baseConfig = { llm: { provider: 'ollama', raw: { OLLAMA_MODEL: 'llama3' } }, agent: { systemPrompt: "sys", maxContextTokens: 1000 }, logging: { level: 'info' } } as AppConfig;
+    let baseConfig = {
+        llm: {
+            provider: 'ollama',
+            raw: { OLLAMA_MODEL: 'llama3' }
+        },
+        agent: {
+            systemPrompt: "sys",
+            maxContextTokens: 1000
+        },
+        logging: { level: 'info' },
+        tools: { enabled: [] }
+    } as AppConfig;
 
     it('returns an OllamaProvider for "ollama"', () => {
         expect(createProvider(baseConfig)).toBeInstanceOf(OllamaProvider);

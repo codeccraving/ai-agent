@@ -12,4 +12,7 @@ export interface AppConfig {
     logging: {
         level: LogLevel
     }
+    tools: {
+        enabled: string[]
+    }
 }
