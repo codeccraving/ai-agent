@@ -34,7 +34,7 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): AppConfig {
 
     const enabledTools = env.AGENT_ENABLED_TOOLS
     if (enabledTools !== undefined) {
-        confg.tools.enabled = enabledTools.split(",").map(v => v.trim())
+        confg.tools.enabled = enabledTools.split(",").filter(v => v.length > 0).map(v => v.trim())
     }
 
     if (!confg.llm.provider) {

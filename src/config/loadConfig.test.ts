@@ -119,4 +119,22 @@ describe('loadConfig', () => {
         expect(thrownError!.message).toContain("LOG_LEVEL")
         expect(thrownError!.message).toContain("AGENT_MAX_CONTEXT_TOKENS")
     })
+
+    it('parses a comma-separated AGENT_ENABLED_TOOLS into config.tools.enabled', () => {
+        const config = loadConfig(buildEnv({ AGENT_ENABLED_TOOLS: 'calculator,file_read' }))
+
+        expect(config.tools.enabled).toEqual(['calculator', 'file_read'])
+    })
+
+    it('trims whitespace around each tool name in AGENT_ENABLED_TOOLS', () => {
+        const config = loadConfig(buildEnv({ AGENT_ENABLED_TOOLS: ' calculator , file_read ' }))
+
+        expect(config.tools.enabled).toEqual(['calculator', 'file_read'])
+    })
+
+    it('parses a single tool name in AGENT_ENABLED_TOOLS', () => {
+        const config = loadConfig(buildEnv({ AGENT_ENABLED_TOOLS: 'calculator' }))
+
+        expect(config.tools.enabled).toEqual(['calculator'])
+    })
 });

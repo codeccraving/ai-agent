@@ -108,6 +108,100 @@ describe('OllamaProvider', () => {
     it('applies the OLLAMA_BASE_URL default when omitted', () => {
         expect(provider.baseUrl).toBe("http://localhost:11434")
     })
+
+    it('forwards options.tools into the request body as function-wrapped definitions', async () => {
+        fetchMock.mockResolvedValueOnce(mockResponse(ollamaBody()));
+        const tools = [{
+            name: 'calculator',
+            description: 'Performs basic arithmetic',
+            parameters: { type: 'object' as const, required: ['a', 'b'], properties: { a: { type: 'number' as const }, b: { type: 'number' as const } } },
+        }]
+        await provider.chat([{ role: 'user', content: 'what is 2+2' }], { tools })
+
+        const body = JSON.parse((fetchMock.mock.calls[0] as any[])[1].body as string)
+        expect(body.tools).toEqual([{ type: 'function', function: tools[0] }])
+    })
+
+    it('omits tools from the request body when none are passed', async () => {
+        fetchMock.mockResolvedValueOnce(mockResponse(ollamaBody()));
+        await provider.chat([{ role: 'user', content: 'hi' }])
+
+        const body = JSON.parse((fetchMock.mock.calls[0] as any[])[1].body as string)
+        expect(body).not.toHaveProperty('tools')
+    })
+
+    it('omits tools from the request body when an empty tools array is passed', async () => {
+        fetchMock.mockResolvedValueOnce(mockResponse(ollamaBody()));
+        await provider.chat([{ role: 'user', content: 'hi' }], { tools: [] })
+
+        const body = JSON.parse((fetchMock.mock.calls[0] as any[])[1].body as string)
+        expect(body).not.toHaveProperty('tools')
+    })
+
+    it('maps a single message.tool_calls entry to ChatResponse.toolCalls and finishReason "tool_calls"', async () => {
+        fetchMock.mockResolvedValueOnce(mockResponse(ollamaBody({
+            message: {
+                role: 'assistant', content: '', tool_calls: [
+                    { function: { name: 'calculator', arguments: { operation: 'add', a: 1, b: 2 } } },
+                ]
+            },
+        })));
+        const result = await provider.chat([{ role: 'user', content: 'what is 1+2' }])
+
+        expect(result.finishReason).toBe('tool_calls')
+        expect(result.toolCalls).toEqual([{ name: 'calculator', arguments: { operation: 'add', a: 1, b: 2 } }])
+    })
+
+    it('maps multiple message.tool_calls entries preserving order', async () => {
+        fetchMock.mockResolvedValueOnce(mockResponse(ollamaBody({
+            message: {
+                role: 'assistant', content: '', tool_calls: [
+                    { function: { name: 'calculator', arguments: { operation: 'add', a: 1, b: 2 } } },
+                    { function: { name: 'weather', arguments: { city: 'Amritsar' } } },
+                ]
+            },
+        })));
+        const result = await provider.chat([{ role: 'user', content: 'do two things' }])
+
+        expect(result.toolCalls).toEqual([
+            { name: 'calculator', arguments: { operation: 'add', a: 1, b: 2 } },
+            { name: 'weather', arguments: { city: 'Amritsar' } },
+        ])
+    })
+
+    it('prefers tool_calls over done_reason "stop" when both are present', async () => {
+        // Ollama's done_reason stays "stop" even on a successful tool call —
+        // presence of message.tool_calls is the real signal, not done_reason.
+        fetchMock.mockResolvedValueOnce(mockResponse(ollamaBody({
+            done_reason: 'stop',
+            message: {
+                role: 'assistant', content: '', tool_calls: [
+                    { function: { name: 'calculator', arguments: { operation: 'add', a: 1, b: 2 } } },
+                ]
+            },
+        })));
+        const result = await provider.chat([{ role: 'user', content: 'what is 1+2' }])
+
+        expect(result.finishReason).toBe('tool_calls')
+    })
+
+    it('omits toolCalls from ChatResponse when message.tool_calls is absent', async () => {
+        fetchMock.mockResolvedValueOnce(mockResponse(ollamaBody()));
+        const result = await provider.chat([{ role: 'user', content: 'hi' }])
+
+        expect(result).not.toHaveProperty('toolCalls')
+        expect(result.finishReason).toBe('stop')
+    })
+
+    it('omits toolCalls from ChatResponse when message.tool_calls is an empty array', async () => {
+        fetchMock.mockResolvedValueOnce(mockResponse(ollamaBody({
+            message: { role: 'assistant', content: 'hi there', tool_calls: [] },
+        })));
+        const result = await provider.chat([{ role: 'user', content: 'hi' }])
+
+        expect(result).not.toHaveProperty('toolCalls')
+        expect(result.finishReason).toBe('stop')
+    })
 })
 
 describe('createProvider', () => {
