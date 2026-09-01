@@ -50,7 +50,7 @@ export class ToolRegistry {
                 const argsValidationResult = validateArgs(tool.parameters, call.arguments)
 
                 if (!argsValidationResult.valid) {
-                    resolve({ content: "Invalid arguments", isError: true })
+                    resolve({ content: `Invalid arguments: ${argsValidationResult.errors.join('; ')}`, isError: true })
                     return
                 }
             }

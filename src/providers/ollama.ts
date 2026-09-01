@@ -101,15 +101,20 @@ export class OllamaProvider {
             }
         }
 
-        return {
+        const response: ChatResponse = {
             model: data.model,
             content: data?.message?.content ?? "",
             finishReason,
             usage: {
                 promptTokens, completionTokens, totalTokens
-            },
-            toolCalls
+            }
         }
+
+        if (finishReason === "tool_calls") {
+            response["toolCalls"] = toolCalls
+        }
+
+        return response
     }
 
 }
