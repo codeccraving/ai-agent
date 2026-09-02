@@ -24,7 +24,6 @@ export class OllamaProvider {
                 model: this.model,
                 messages,
                 stream: false,
-                think: false,
                 options: {
                     temperature: options?.temperature ?? DEFAULT_TEMPERATURE,
                     num_predict: options?.maxTokens
@@ -32,11 +31,17 @@ export class OllamaProvider {
             }
 
             if (options?.tools?.length) {
-                body["tools"] = options.tools.map(tool => ({
+                body.tools = options.tools.map(tool => ({
                     type: "function",
                     function: tool
                 }))
             }
+
+            if (options?.think !== undefined) {
+                body.think = options.think
+            }
+
+            console.log("body", body)
 
             const response = await fetchWithTimeout(`${this.baseUrl}/api/chat`, {
                 method: 'POST',

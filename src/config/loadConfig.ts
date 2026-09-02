@@ -6,7 +6,8 @@ export const DEFAULT_MAX_CONTEXT_TOKENS = 8000
 export function loadConfig(env: NodeJS.ProcessEnv = process.env): AppConfig {
 
     const errors: string[] = []
-    let maxContextTokens
+    let maxContextTokens: number | undefined
+    let thinkDefault: boolean | undefined
 
     if (env.AGENT_MAX_CONTEXT_TOKENS === "" || env.AGENT_MAX_CONTEXT_TOKENS === undefined) {
         maxContextTokens = DEFAULT_MAX_CONTEXT_TOKENS
@@ -14,6 +15,16 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): AppConfig {
         maxContextTokens = parseInt(env.AGENT_MAX_CONTEXT_TOKENS as string)
     }
 
+    if (env.AGENT_THINK_MODE !== "" && env.AGENT_THINK_MODE !== undefined) {
+        const thinkMode = env.AGENT_THINK_MODE?.toLowerCase()?.trim()
+        if (thinkMode === "true") {
+            thinkDefault = true
+        } else if (thinkMode === "false") {
+            thinkDefault = false
+        } else {
+            errors.push(`AGENT_THINK_MODE must be one of true|false, got ${env.AGENT_THINK_MODE}`)
+        }
+    }
 
     const confg: AppConfig = {
         llm: {
@@ -39,6 +50,10 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): AppConfig {
 
     if (!confg.llm.provider) {
         errors.push("LLM_PROVIDER is required")
+    }
+
+    if (thinkDefault !== undefined) {
+        confg.agent.thinkDefault = thinkDefault
     }
 
     if (Number.isNaN(confg.agent.maxContextTokens) || confg.agent.maxContextTokens <= 0) {

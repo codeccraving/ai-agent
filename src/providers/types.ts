@@ -32,6 +32,7 @@ export interface ChatOptions {
     temperature?: number
     maxTokens?: number
     tools?: ToolDefinition[]
+    think?: boolean
 }
 
 export type FinishReason = 'stop' | 'length' | 'error' | 'tool_calls'

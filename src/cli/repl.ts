@@ -3,12 +3,13 @@ import type { AppConfig } from "../config/types.js";
 import * as readline from 'node:readline';
 import { createProvider } from "../providers/factory.js";
 import { appendAssistantMessage, appendUserMessage, createConversation, removeLastMessage, toMessages, type Conversation } from "../agent/conversation.js";
-import type { ChatProvider } from "../providers/types.js";
+import type { ChatOptions, ChatProvider } from "../providers/types.js";
 import { truncateToFit } from "../agent/contextWindow.js";
 import { ToolRegistry } from "../tools/registry.js";
 import { calculatorTool } from "../tools/lib/calculator/index.js";
 import { registerEnabledTools } from "../tools/registerEnabledTools.js";
 import { buildToolFollowupMessages } from "../agent/toolExchange.js";
+import { parseThinkCommand } from "./commands/thinkCommand.js";
 
 export class AgentREPL {
 
@@ -17,6 +18,7 @@ export class AgentREPL {
     private provider: ChatProvider
     private conversation: Conversation
     private toolRegistry: ToolRegistry
+    private thinkOverride: boolean | undefined
 
     constructor() {
         try {
@@ -73,6 +75,24 @@ export class AgentREPL {
             return
         }
 
+        const thinkCommand = parseThinkCommand(message)
+        if (thinkCommand != null) {
+            if (thinkCommand.kind === "set") {
+                this.thinkOverride = thinkCommand.value
+                console.log(`Think mode set to ${this.thinkOverride}`)
+            } else if (thinkCommand.kind === "reset") {
+                this.thinkOverride = undefined
+                console.log(`Think mode reset to default (${this.config.agent.thinkDefault})`)
+            } else if (thinkCommand.kind === "status") {
+                const effectiveThinkMode = this.thinkOverride !== undefined ? this.thinkOverride : this.config.agent.thinkDefault
+                console.log(`Think mode is currently ${effectiveThinkMode}`)
+            } else if (thinkCommand.kind === "invalid") {
+                console.log(`Invalid /think command: ${thinkCommand.raw}. Valid commands are: /think on, /think off, /think reset, /think status`)
+            }
+            this.rl.prompt()
+            return
+        }
+
         //Append the user message to the conversation history
         appendUserMessage(this.conversation, message)
 
@@ -84,12 +104,13 @@ export class AgentREPL {
         this.rl.pause() //Pause the prompt while waiting for the provider response
 
         //Call the provider's chat method with the conversation messages, handle the response, and re-prompt
-        this.provider.chat(toMessages(this.conversation), { tools: this.toolRegistry.getToolDefinitions() }).then(async (response) => {
+        const chatOptions: ChatOptions = { tools: this.toolRegistry.getToolDefinitions(), think: (this.thinkOverride ?? this.config.agent.thinkDefault) as boolean }
+        this.provider.chat(toMessages(this.conversation), chatOptions).then(async (response) => {
 
             if (response.finishReason === "tool_calls" && response.toolCalls?.length) {
                 const toolCallResults = await Promise.all(response.toolCalls?.map(call => this.toolRegistry.execute(call)))
                 const followUpMessages = buildToolFollowupMessages(toMessages(this.conversation), response.content, response.toolCalls, toolCallResults)
-                const final = await this.provider.chat(followUpMessages, { tools: this.toolRegistry.getToolDefinitions() })
+                const final = await this.provider.chat(followUpMessages, chatOptions)
                 appendAssistantMessage(this.conversation, final.content)
                 console.log(final.content)
                 return

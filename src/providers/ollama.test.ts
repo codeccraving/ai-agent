@@ -202,6 +202,31 @@ describe('OllamaProvider', () => {
         expect(result).not.toHaveProperty('toolCalls')
         expect(result.finishReason).toBe('stop')
     })
+
+    it('omits "think" from the request body when not specified', async () => {
+        fetchMock.mockResolvedValueOnce(mockResponse(ollamaBody()))
+        await provider.chat([{ role: 'user', content: 'hi' }])
+
+        const body = JSON.parse((fetchMock.mock.calls[0] as any[])[1].body as string)
+        expect('think' in body).toBe(false)
+    })
+
+    it('sends "think" as a top-level request field, not nested in "options", when explicitly true', async () => {
+        fetchMock.mockResolvedValueOnce(mockResponse(ollamaBody()))
+        await provider.chat([{ role: 'user', content: 'hi' }], { think: true })
+
+        const body = JSON.parse((fetchMock.mock.calls[0] as any[])[1].body as string)
+        expect(body.think).toBe(true)
+        expect('think' in body.options).toBe(false)
+    })
+
+    it('sends "think": false as a top-level request field when explicitly disabled', async () => {
+        fetchMock.mockResolvedValueOnce(mockResponse(ollamaBody()))
+        await provider.chat([{ role: 'user', content: 'hi' }], { think: false })
+
+        const body = JSON.parse((fetchMock.mock.calls[0] as any[])[1].body as string)
+        expect(body.think).toBe(false)
+    })
 })
 
 describe('createProvider', () => {
