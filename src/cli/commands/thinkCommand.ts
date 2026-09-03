@@ -6,8 +6,7 @@ export type ThinkCommand =
 
 // Returns null only when the line is not a /think command at all.
 export function parseThinkCommand(line: string): ThinkCommand | null {
-    const lineTrimmed = line.trim().toLowerCase() // value is case-insensitive
-    let [command, ...args] = lineTrimmed.split(' ')?.filter(arg => arg.trim().length > 0) // filter out empty strings from multiple spaces
+    let [command, ...args] = line.split(' ')?.filter(arg => arg.trim().length > 0) // filter out empty strings from multiple spaces
     let firstArg = args?.[0] ? args[0].trim() : undefined
 
     command = command?.trim() // trim whitespace from the command itself
