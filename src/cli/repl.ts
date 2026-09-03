@@ -104,7 +104,13 @@ export class AgentREPL {
         this.rl.pause() //Pause the prompt while waiting for the provider response
 
         //Call the provider's chat method with the conversation messages, handle the response, and re-prompt
-        const chatOptions: ChatOptions = { tools: this.toolRegistry.getToolDefinitions(), think: (this.thinkOverride ?? this.config.agent.thinkDefault) as boolean }
+        const chatOptions: ChatOptions = { tools: this.toolRegistry.getToolDefinitions() }
+        const think = this.thinkOverride ?? this.config.agent.thinkDefault
+
+        if (think != undefined) {
+            chatOptions.think = think
+        }
+
         this.provider.chat(toMessages(this.conversation), chatOptions).then(async (response) => {
 
             if (response.finishReason === "tool_calls" && response.toolCalls?.length) {

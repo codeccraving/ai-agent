@@ -7,24 +7,36 @@ export type ThinkCommand =
 // Returns null only when the line is not a /think command at all.
 export function parseThinkCommand(line: string): ThinkCommand | null {
     const lineTrimmed = line.trim().toLowerCase() // value is case-insensitive
+    let [command, ...args] = lineTrimmed.split(' ')?.filter(arg => arg.trim().length > 0) // filter out empty strings from multiple spaces
+    let firstArg = args?.[0] ? args[0].trim() : undefined
 
-    if (lineTrimmed === "") {
+    command = command?.trim() // trim whitespace from the command itself
+
+    if (command === "") {
         return null
     }
 
-    const valueTrimmed = lineTrimmed.slice(7).trim()?.split(' ')?.[0] // value is everything after "/think"
-    const trimmed = `/think${valueTrimmed === '' ? '' : ' ' + valueTrimmed}` // normalized form of the line, with a single space after "/think"
+    if (command?.toLowerCase() === "/think") {
 
-    if (trimmed === "/think") {
-        return { kind: 'status' }
-    } else if (trimmed === "/think on") {
-        return { kind: 'set', value: true }
-    } else if (trimmed === "/think off") {
-        return { kind: 'set', value: false }
-    } else if (trimmed === "/think default" || trimmed === "/think reset") {
-        return { kind: 'reset' }
-    } else if (lineTrimmed.startsWith("/think ")) {
-        return { kind: 'invalid', raw: valueTrimmed as string }
+        firstArg = firstArg?.toLowerCase()
+
+        if (!firstArg || firstArg === "status") {
+            return { kind: 'status' }
+        }
+
+        if (firstArg === "on") {
+            return { kind: 'set', value: true }
+        }
+
+        if (firstArg === "off") {
+            return { kind: 'set', value: false }
+        }
+
+        if (firstArg === "default" || firstArg === "reset") {
+            return { kind: 'reset' }
+        }
+        
+        return { kind: 'invalid', raw: args.join(' ') } // return the raw argument string for invalid commands
     }
 
     return null

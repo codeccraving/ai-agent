@@ -41,8 +41,6 @@ export class OllamaProvider {
                 body.think = options.think
             }
 
-            console.log("body", body)
-
             const response = await fetchWithTimeout(`${this.baseUrl}/api/chat`, {
                 method: 'POST',
                 headers: {

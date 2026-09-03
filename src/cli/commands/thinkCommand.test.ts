@@ -31,7 +31,7 @@ describe('parseThinkCommand', () => {
     })
 
     it('returns invalid with the raw argument for an unrecognized argument', () => {
-        expect(parseThinkCommand('/think blah')).toEqual({ kind: 'invalid', raw: 'blah' })
+        expect(parseThinkCommand('/think blah blah')).toEqual({ kind: 'invalid', raw: 'blah blah' })
     })
 
     it('is case-insensitive on both the command and the argument', () => {
