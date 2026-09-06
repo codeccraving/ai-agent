@@ -1,6 +1,7 @@
 // src/config/loadConfig.test.ts
 import { describe, it, expect } from 'vitest';
-import { DEFAULT_SYSTEM_PROMPT, loadConfig, DEFAULT_MAX_CONTEXT_TOKENS } from './loadConfig.js';
+import { DEFAULT_SYSTEM_PROMPT, loadConfig, DEFAULT_MAX_CONTEXT_TOKENS, DEFAULT_TOOL_TIMEOUT_MS } from './loadConfig.js';
+import { resolve } from 'node:path';
 
 // Baseline valid env — each test overrides only what it's testing
 function buildEnv(overrides: Record<string, string | undefined> = {}) {
@@ -29,7 +30,9 @@ describe('loadConfig', () => {
             agent: {
                 systemPrompt: DEFAULT_SYSTEM_PROMPT,
                 maxContextTokens: DEFAULT_MAX_CONTEXT_TOKENS,
-                thinkDefault: undefined
+                thinkDefault: undefined,
+                projectRoot: process.cwd(),
+                toolTimeoutMs: DEFAULT_TOOL_TIMEOUT_MS
             },
             logging: {
                 level: 'info',
@@ -259,5 +262,51 @@ describe('loadConfig', () => {
         }
         expect(thrownError).toBeDefined()
         expect(thrownError!.message).toContain("AGENT_THINK_MODE")
+    })
+
+    it('defaults agent.projectRoot to process.cwd() when AGENT_PROJECT_ROOT is unset', () => {
+        const config = loadConfig(buildEnv({ AGENT_PROJECT_ROOT: undefined }))
+        expect(config.agent.projectRoot).toBe(process.cwd())
+    })
+
+    it('uses AGENT_PROJECT_ROOT when it is set, resolved to an absolute path', () => {
+        const config = loadConfig(buildEnv({ AGENT_PROJECT_ROOT: './some/relative/path' }))
+        expect(config.agent.projectRoot).toBe(resolve('./some/relative/path'))
+    })
+
+    it('leaves an already-absolute AGENT_PROJECT_ROOT unchanged', () => {
+        const config = loadConfig(buildEnv({ AGENT_PROJECT_ROOT: '/tmp/some-project' }))
+        expect(config.agent.projectRoot).toBe('/tmp/some-project')
+    })
+
+    it('uses AGENT_TOOL_TIMEOUT_MS when it is set', () => {
+        const config = loadConfig(buildEnv({ AGENT_TOOL_TIMEOUT_MS: '5000' }))
+        expect(config.agent.toolTimeoutMs).toBe(5000)
+    })
+
+    it('falls back to DEFAULT_TOOL_TIMEOUT_MS when AGENT_TOOL_TIMEOUT_MS is unset', () => {
+        const config = loadConfig(buildEnv({ AGENT_TOOL_TIMEOUT_MS: undefined }))
+        expect(config.agent.toolTimeoutMs).toBe(DEFAULT_TOOL_TIMEOUT_MS)
+    })
+
+    it('rejects a non-numeric AGENT_TOOL_TIMEOUT_MS', () => {
+        let thrownError: Error | undefined
+        try { loadConfig(buildEnv({ AGENT_TOOL_TIMEOUT_MS: 'abc' })) } catch (e) { thrownError = e as Error }
+        expect(thrownError).toBeDefined()
+        expect(thrownError!.message).toContain("AGENT_TOOL_TIMEOUT_MS")
+    })
+
+    it('rejects a zero AGENT_TOOL_TIMEOUT_MS', () => {
+        let thrownError: Error | undefined
+        try { loadConfig(buildEnv({ AGENT_TOOL_TIMEOUT_MS: '0' })) } catch (e) { thrownError = e as Error }
+        expect(thrownError).toBeDefined()
+        expect(thrownError!.message).toContain("AGENT_TOOL_TIMEOUT_MS")
+    })
+
+    it('rejects a negative AGENT_TOOL_TIMEOUT_MS', () => {
+        let thrownError: Error | undefined
+        try { loadConfig(buildEnv({ AGENT_TOOL_TIMEOUT_MS: '-100' })) } catch (e) { thrownError = e as Error }
+        expect(thrownError).toBeDefined()
+        expect(thrownError!.message).toContain("AGENT_TOOL_TIMEOUT_MS")
     })
 });

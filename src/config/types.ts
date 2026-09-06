@@ -9,6 +9,8 @@ export interface AppConfig {
         systemPrompt: string
         maxContextTokens: number
         thinkDefault?: boolean
+        projectRoot: string
+        toolTimeoutMs: number
     }
     logging: {
         level: LogLevel

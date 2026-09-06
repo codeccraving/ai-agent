@@ -12,6 +12,11 @@ export interface Tool {
     readonly description: string
     readonly parameters: JSONSchema  // parameters.type must be "object"
     execute(args: Record<string, unknown>): Promise<ToolResult>
+    // Optional pure predicate: does THIS call, with these specific args, mutate
+    // state outside the process? Omitted/false => auto-executes. True => the
+    // REPL must get human confirmation before execute() runs.
+    // Must be synchronous and side-effect-free — no I/O.
+    isDestructive?(args: Record<string, unknown>): boolean
 }
 
 export type ToolErrorCode = 'duplicate_tool' | 'invalid_tool'

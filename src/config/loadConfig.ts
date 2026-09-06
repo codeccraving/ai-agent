@@ -1,18 +1,27 @@
+import { resolve } from "node:path";
 import type { AppConfig, LogLevel } from "./types.js";
 
 export const DEFAULT_SYSTEM_PROMPT = "You are a helpful AI assistant. Answer the user's questions to the best of your ability."
 export const DEFAULT_MAX_CONTEXT_TOKENS = 8000
+export const DEFAULT_TOOL_TIMEOUT_MS = 30_000
 
 export function loadConfig(env: NodeJS.ProcessEnv = process.env): AppConfig {
 
     const errors: string[] = []
     let maxContextTokens: number | undefined
     let thinkDefault: boolean | undefined
+    let toolTimeoutMs: number | undefined
 
     if (env.AGENT_MAX_CONTEXT_TOKENS === "" || env.AGENT_MAX_CONTEXT_TOKENS === undefined) {
         maxContextTokens = DEFAULT_MAX_CONTEXT_TOKENS
     } else {
         maxContextTokens = parseInt(env.AGENT_MAX_CONTEXT_TOKENS as string)
+    }
+
+    if (env.AGENT_TOOL_TIMEOUT_MS === "" || env.AGENT_TOOL_TIMEOUT_MS === undefined) {
+        toolTimeoutMs = DEFAULT_TOOL_TIMEOUT_MS
+    } else {
+        toolTimeoutMs = parseInt(env.AGENT_TOOL_TIMEOUT_MS as string)
     }
 
     if (env.AGENT_THINK_MODE !== "" && env.AGENT_THINK_MODE !== undefined) {
@@ -33,7 +42,9 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): AppConfig {
         },
         agent: {
             systemPrompt: env.AGENT_SYSTEM_PROMPT || DEFAULT_SYSTEM_PROMPT,
-            maxContextTokens
+            maxContextTokens,
+            projectRoot: resolve(env.AGENT_PROJECT_ROOT === "" || env.AGENT_PROJECT_ROOT === undefined ? process.cwd() : env.AGENT_PROJECT_ROOT),
+            toolTimeoutMs
         },
         logging: {
             level: env.LOG_LEVEL as LogLevel
@@ -58,6 +69,10 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): AppConfig {
 
     if (Number.isNaN(confg.agent.maxContextTokens) || confg.agent.maxContextTokens <= 0) {
         errors.push("AGENT_MAX_CONTEXT_TOKENS must be a numeric value and greater than 0")
+    }
+
+    if (Number.isNaN(confg.agent.toolTimeoutMs) || confg.agent.toolTimeoutMs <= 0) {
+        errors.push("AGENT_TOOL_TIMEOUT_MS must be a numeric value and greater than 0")
     }
 
     LogLevel: switch (confg.logging.level) {

@@ -237,7 +237,9 @@ describe('createProvider', () => {
         },
         agent: {
             systemPrompt: "sys",
-            maxContextTokens: 1000
+            maxContextTokens: 1000,
+            projectRoot: process.cwd(),
+            toolTimeoutMs: 30000
         },
         logging: { level: 'info' },
         tools: { enabled: [] }

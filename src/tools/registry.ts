@@ -37,6 +37,10 @@ export class ToolRegistry {
         return this.toolsMap.has(name)
     }
 
+    getTool(name: string): Tool | undefined {
+        return this.toolsMap.get(name)
+    }
+
     execute(call: ToolCall): Promise<ToolResult> {
         return new Promise(async resolve => {
             if (!this.has(call.name)) {
@@ -44,7 +48,7 @@ export class ToolRegistry {
                 return
             }
 
-            const tool = this.toolsMap.get(call.name)
+            const tool = this.getTool(call.name)
 
             if (tool?.parameters != undefined) {
                 const argsValidationResult = validateArgs(tool.parameters, call.arguments)
@@ -57,7 +61,7 @@ export class ToolRegistry {
 
             try {
                 const result = await tool?.execute(call.arguments) as ToolResult
-                
+
                 if (result.isError) {
                     result.content = `Tool "${call.name}" failed: ${result.content}`
                 }
