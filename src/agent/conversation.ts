@@ -21,6 +21,7 @@ export function toMessages(conversation: Conversation): ChatMessage[]{
 export function appendUserMessage(conversation: Conversation, content: string): void {
     conversation.history.push({ role: "user", content })
 }
+
 export function appendAssistantMessage(conversation: Conversation, content: string): void {
     conversation.history.push({ role: "assistant", content })
 }

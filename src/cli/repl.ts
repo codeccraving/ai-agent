@@ -204,6 +204,18 @@ export class AgentREPL {
             if (response.finishReason === "tool_calls" && response.toolCalls?.length) {
                 const toolCallResults = await this.handleToolCalls(response.toolCalls)
                 const followUpMessages = buildToolFollowupMessages(toMessages(this.conversation), response.content, response.toolCalls, toolCallResults)
+                followUpMessages.push({
+                    role: "user",
+                    content: `Consolidate all tool calls and responses into **one concise execution summary** suitable for both **agent history and user-facing output**.
+
+                            Show the flow in chronological order, including only the relevant tool/action, key inputs, outcome, and final result. Make it clear what was done and what happened, without exposing unnecessary internal details or repetitive text.
+
+                            Format:
+                            #1 Tool: <action>(<key inputs>) → <result>
+                            #2 Tool: <action>(<key inputs>) → <result>
+                            Final: <concise user-facing summary>
+                            `.trim()
+                })
                 const final = await this.provider.chat(followUpMessages, chatOptions)
                 appendAssistantMessage(this.conversation, final.content)
                 console.log(final.content)
