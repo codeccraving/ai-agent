@@ -26,6 +26,7 @@ export class AgentREPL {
     private conversation: Conversation
     private toolRegistry: ToolRegistry
     private thinkOverride: boolean | undefined
+    private awaitingApproval: boolean = false
 
     constructor() {
         try {
@@ -133,7 +134,8 @@ export class AgentREPL {
 
             for (let [i, toolCall] of Object.values(gated).entries()) {
                 //show the tool name and its args in a human-readable way (e.g. for writeFile, the path and maybe a byte count, not a raw dump of file contents), then wait for yes/no.
-                this.rl.pause() //Pause the prompt while waiting for user input
+                this.awaitingApproval = true //Set a flag to indicate that we're awaiting user approval
+                this.rl.pause() //Pause the prompt while waiting for user approval
                 const approved = await this.promptApproval(`Tool call "${toolCall.name}" with arguments ${JSON.stringify(toolCall.arguments)} is potentially destructive. Do you want to proceed? (y/n): `)
                 if (approved) {
                     const result = await this.toolRegistry.execute(toolCall)
@@ -141,7 +143,8 @@ export class AgentREPL {
                 } else {
                     toolCallResults[Number(Object.keys(gated)[i])] = { isError: true, content: `User declined to run "${toolCall.name}".` }
                 }
-                this.rl.resume() //Resume the prompt after user input
+                this.awaitingApproval = false //Clear the flag
+                this.rl.resume() //Resume the prompt after user approval is done
             }
         }
 
@@ -149,6 +152,12 @@ export class AgentREPL {
     }
 
     private onLineInputFn(input: string) {
+
+        //If we're currently awaiting user approval for a tool call, ignore any new input until the approval process is complete
+        if (this.awaitingApproval) {
+            return
+        }
+
         let message = input.trim()
 
         //If empty after trimming, ignore it — re-prompt without sending anything
