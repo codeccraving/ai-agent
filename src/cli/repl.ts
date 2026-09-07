@@ -104,7 +104,7 @@ export class AgentREPL {
         })
     }
 
-    private async handleToolCalls(toolCalls: ToolCall[]): Promise<(ToolResult | { isError: true; content: string })[]> {
+    private async handleToolCalls(toolCalls: ToolCall[]): Promise<string> {
 
         //Classify the tool calls to determine which ones need confirmation
         const toolCallResults: (ToolResult | { isError: true; content: string })[] = Array(toolCalls.length).fill(false)
@@ -137,18 +137,19 @@ export class AgentREPL {
                 this.awaitingApproval = true //Set a flag to indicate that we're awaiting user approval
                 this.rl.pause() //Pause the prompt while waiting for user approval
                 const approved = await this.promptApproval(`Tool call "${toolCall.name}" with arguments ${JSON.stringify(toolCall.arguments)} is potentially destructive. Do you want to proceed? (y/n): `)
+                const toolContent = `${toolCall.name}(${toolCall?.arguments ? JSON.stringify(toolCall.arguments) : ''})`
                 if (approved) {
                     const result = await this.toolRegistry.execute(toolCall)
                     toolCallResults[Number(Object.keys(gated)[i])] = result
                 } else {
-                    toolCallResults[Number(Object.keys(gated)[i])] = { isError: true, content: `User declined to run "${toolCall.name}".` }
+                    toolCallResults[Number(Object.keys(gated)[i])] = { isError: true, content: `${toolContent} -> declined by user` }
                 }
                 this.awaitingApproval = false //Clear the flag
                 this.rl.resume() //Resume the prompt after user approval is done
             }
         }
 
-        return toolCallResults
+        return toolCallResults.map(result => result.content).join("\n")
     }
 
     private onLineInputFn(input: string) {
@@ -200,30 +201,14 @@ export class AgentREPL {
 
         this.provider.chat(toMessages(this.conversation), chatOptions).then(async (response) => {
 
-            //If the response indicates that the assistant wants to call tools, handle those tool calls and then send a follow-up message with the results
+            let content: string = response.content
             if (response.finishReason === "tool_calls" && response.toolCalls?.length) {
-                const toolCallResults = await this.handleToolCalls(response.toolCalls)
-                const followUpMessages = buildToolFollowupMessages(toMessages(this.conversation), response.content, response.toolCalls, toolCallResults)
-                followUpMessages.push({
-                    role: "user",
-                    content: `Consolidate all tool calls and responses into **one concise execution summary** suitable for both **agent history and user-facing output**.
-
-                            Show the flow in chronological order, including only the relevant tool/action, key inputs, outcome, and final result. Make it clear what was done and what happened, without exposing unnecessary internal details or repetitive text.
-
-                            Format:
-                            #1 Tool: <action>(<key inputs>) → <result>
-                            #2 Tool: <action>(<key inputs>) → <result>
-                            Final: <concise user-facing summary>
-                            `.trim()
-                })
-                const final = await this.provider.chat(followUpMessages, chatOptions)
-                appendAssistantMessage(this.conversation, final.content)
-                console.log(final.content)
-                return
+                content = await this.handleToolCalls(response.toolCalls)
             }
 
-            appendAssistantMessage(this.conversation, response.content) //Append the assistant's response to the conversation history
-            console.log(response.content) //Print the assistant's response to the console
+            appendAssistantMessage(this.conversation, content) //Append the assistant's response to the conversation history
+            console.log(this.conversation.history)
+            console.log(content) //Print the assistant's response to the console
         }).catch(e => {
             removeLastMessage(this.conversation) //Roll back the user message that failed to get a response
             console.error("Error:", e.message)
