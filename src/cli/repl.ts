@@ -133,6 +133,7 @@ export class AgentREPL {
 
             for (let [i, toolCall] of Object.values(gated).entries()) {
                 //show the tool name and its args in a human-readable way (e.g. for writeFile, the path and maybe a byte count, not a raw dump of file contents), then wait for yes/no.
+                this.rl.pause() //Pause the prompt while waiting for user input
                 const approved = await this.promptApproval(`Tool call "${toolCall.name}" with arguments ${JSON.stringify(toolCall.arguments)} is potentially destructive. Do you want to proceed? (y/n): `)
                 if (approved) {
                     const result = await this.toolRegistry.execute(toolCall)
@@ -140,6 +141,7 @@ export class AgentREPL {
                 } else {
                     toolCallResults[Number(Object.keys(gated)[i])] = { isError: true, content: `User declined to run "${toolCall.name}".` }
                 }
+                this.rl.resume() //Resume the prompt after user input
             }
         }
 
