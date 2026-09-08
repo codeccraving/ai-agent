@@ -123,8 +123,20 @@ export class AgentREPL {
         // Execute the tool calls that don't need confirmation automatically
         if (Object.keys(auto).length > 0) {
             const results = await Promise.all(Object.values(auto).map(call => this.toolRegistry.execute(call)))
+
             for (let i = 0; i < results.length; i++) {
-                toolCallResults[Number(Object.keys(auto)[i])] = results[i] as ToolResult
+                const toolCall = Object.values(auto)[i] as ToolCall
+                const toolContent = `Tool[${toolCall.name}(${toolCall?.arguments ? JSON.stringify(toolCall.arguments) : ''})]`
+
+                const result = results[i] as ToolResult
+
+                if (result.isError) {
+                    result.content = `${toolContent} -> failed\nReason: ${result.content}`
+                } else {
+                    result.content = `${toolContent} -> success\nResult: ${result.content}`
+                }
+
+                toolCallResults[Number(Object.keys(auto)[i])] = result
             }
         }
 
