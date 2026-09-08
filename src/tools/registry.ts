@@ -59,23 +59,14 @@ export class ToolRegistry {
                 }
             }
 
-            let toolContent = `Tool[${call.name}(${call?.arguments ? JSON.stringify(call.arguments) : ''})] Used`
-
             try {
-                const result = await tool?.execute(call.arguments) as ToolResult
-
-                if (result.isError) {
-                    result.content = `${toolContent} -> failed\nReason: ${result.content}`
-                } else {
-                    result.content = `${toolContent} -> success\nResult: ${result.content}`
-                }
-
-                return resolve(result)
+                resolve(await tool?.execute(call.arguments) as ToolResult)
+                return
             } catch (err: any) {
                 if (err instanceof Error) {
-                    resolve({ isError: true, content: `${toolContent} -> failed\nReason: ${err.message}` })
+                    resolve({ isError: true, content: err.message })
                 } else {
-                    resolve({ isError: true, content: `${toolContent} -> failed\nReason: ${err}` })
+                    resolve({ isError: true, content: err })
                 }
             }
         })

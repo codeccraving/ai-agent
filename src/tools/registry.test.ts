@@ -114,7 +114,7 @@ describe('ToolRegistry.execute', () => {
         const result = await registry.execute({ name: 'echo', arguments: { text: 'hi' } })
 
         expect(result.isError).toBe(true)
-        expect(result.content).toMatch(/failed/)
+        expect(result.content).toBe('boom')
     })
 
     it('catches a non-Error throw from execute() and still returns an isError result', async () => {

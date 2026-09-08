@@ -136,9 +136,16 @@ export class AgentREPL {
                 this.awaitingApproval = true //Set a flag to indicate that we're awaiting user approval
                 this.rl.pause() //Pause the prompt while waiting for user approval
                 const approved = await this.promptApproval(`Tool call "${toolCall.name}" with arguments ${JSON.stringify(toolCall.arguments)} is potentially destructive. Do you want to proceed? (y/n): `)
-                const toolContent = `${toolCall.name}(${toolCall?.arguments ? JSON.stringify(toolCall.arguments) : ''})`
+                const toolContent = `Tool[${toolCall.name}(${toolCall?.arguments ? JSON.stringify(toolCall.arguments) : ''})]`
                 if (approved) {
                     const result = await this.toolRegistry.execute(toolCall)
+
+                    if (result.isError) {
+                        result.content = `${toolContent} -> failed\nReason: ${result.content}`
+                    } else {
+                        result.content = `${toolContent} -> success\nResult: ${result.content}`
+                    }
+
                     toolCallResults[Number(Object.keys(gated)[i])] = result
                 } else {
                     toolCallResults[Number(Object.keys(gated)[i])] = { isError: true, content: `${toolContent} -> declined by user` }
