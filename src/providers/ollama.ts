@@ -89,7 +89,6 @@ export class OllamaProvider {
         const totalTokens = promptTokens !== undefined && completionTokens !== undefined
             ? promptTokens + completionTokens
             : undefined;
-
         let finishReason: FinishReason = data?.done_reason === 'length' ? 'length' : 'stop'
         const toolCalls: ToolCall[] = []
 

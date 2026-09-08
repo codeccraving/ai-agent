@@ -1,3 +1,5 @@
+//This file is marked as depreceated
+
 import type { ChatMessage, ToolCall } from "../providers/types.js";
 import type { ToolResult } from "../tools/types.js";
 
@@ -18,7 +20,7 @@ export function buildToolFollowupMessages(
     ]
 
     for (const [i, tool] of toolCalls.entries()) {
-        messages.push({ role: "tool", content: toolResults[i]?.content as string, toolName: tool.name })
+        // messages.push({ role: "tool", content: toolResults[i]?.content as string, toolName: tool.name })
     }
 
     return messages

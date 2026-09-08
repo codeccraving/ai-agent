@@ -81,7 +81,7 @@ describe('validateArgs', () => {
         ['number', { v: 5.5 }, true],
         ['number', { v: 'nope' }, false],
         ['boolean', { v: true }, true],
-        ['boolean', { v: 'true' }, false],
+        ['boolean', { v: 'true' }, true],
         ['array', { v: [1, 2] }, true],
         ['array', { v: { 0: 1 } }, false],
         ['object', { v: { a: 1 } }, true],

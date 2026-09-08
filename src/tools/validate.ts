@@ -23,18 +23,34 @@ export function validateArgs(schema: JSONSchema, args: Record<string, unknown>):
         if (typeVal === "string" && typeof args[key] != "string") {
             result.errors.push(`Argument "${key}" must be a string`)
         }
+
         if (typeVal === "integer" && !Number.isInteger(args[key])) {
             result.errors.push(`Argument "${key}" must be an integer`)
         }
-        if (typeVal === "boolean" && typeof args[key] != "boolean") {
+
+        if (typeVal === "boolean") {
+
+            if (typeof args[key] === "boolean" || (typeof args[key] === "string" && ['true', 'false'].includes(args[key].toLowerCase()))) continue
+
             result.errors.push(`Argument "${key}" must be a boolean`)
         }
-        if (typeVal === "number" && typeof args[key] != "number") {
+
+        if (typeVal === "number") {
+
+            if (typeof args[key] === "number") continue
+            
+            if (typeof args[key] === "string") {
+                const v = Number(args[key])
+                if (!Number.isNaN(v) && typeof v === "number") continue
+            }
+
             result.errors.push(`Argument "${key}" must be a number`)
         }
+
         if (typeVal === "array" && !Array.isArray(args[key])) {
             result.errors.push(`Argument "${key}" must be an array`)
         }
+
         if (typeVal === "object" && !isValidObject(args[key])) {
             result.errors.push(`Argument "${key}" must be an object`)
         }

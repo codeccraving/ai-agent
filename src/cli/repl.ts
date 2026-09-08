@@ -8,7 +8,6 @@ import { truncateToFit } from "../agent/contextWindow.js";
 import { ToolRegistry } from "../tools/registry.js";
 import { calculatorTool } from "../tools/lib/calculator/index.js";
 import { registerEnabledTools } from "../tools/registerEnabledTools.js";
-import { buildToolFollowupMessages } from "../agent/toolExchange.js";
 import { parseThinkCommand, type ThinkCommand } from "./commands/thinkCommand.js";
 import { classifyToolCalls } from "../agent/confirmGate.js";
 import type { ToolResult } from "../tools/types.js";
@@ -207,7 +206,6 @@ export class AgentREPL {
             }
 
             appendAssistantMessage(this.conversation, content) //Append the assistant's response to the conversation history
-            console.log(this.conversation.history)
             console.log(content) //Print the assistant's response to the console
         }).catch(e => {
             removeLastMessage(this.conversation) //Roll back the user message that failed to get a response
