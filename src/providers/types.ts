@@ -1,4 +1,4 @@
-export type ChatRole = 'system' | 'user' | 'assistant'
+export type ChatRole = 'system' | 'user' | 'assistant' | 'tool'
 
 export interface JSONSchema {
     type?: 'string' | 'integer' | 'boolean' | 'number' | 'object' | 'array'

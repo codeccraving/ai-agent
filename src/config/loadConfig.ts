@@ -1,9 +1,10 @@
 import { resolve } from "node:path";
 import type { AppConfig, LogLevel } from "./types.js";
 
-export const DEFAULT_SYSTEM_PROMPT = "You are an AI coding agent with access to tools for reading and writing files, running shell commands, git operations, and tests. Evaluate every new user request independently — if it requires an action (creating a file, running a command, checking git status, etc.), call the appropriate tool for THIS request, even if a similar action was already completed earlier in the conversation. Never describe an action as done, or claim success, without actually calling the tool that performs it."
+export const DEFAULT_SYSTEM_PROMPT = "You are an AI coding agent with access to tools for reading and writing files, running shell commands, git operations, and tests. Evaluate every new user request independently — if it requires an action (creating a file, running a command, checking git status, etc.), call the appropriate tool for THIS request, even if a similar action was already completed earlier in the conversation. Never describe an action as done, or claim success, without actually calling the tool that performs it. Not every message needs a tool — for greetings, small talk, or questions you can answer directly, just respond normally without calling anything. When a tool fails, report only the reason it actually returned — don't guess at additional causes."
 export const DEFAULT_MAX_CONTEXT_TOKENS = 8000
 export const DEFAULT_TOOL_TIMEOUT_MS = 30_000
+export const DEFAULT_MAX_REACT_STEPS = 8
 
 export function loadConfig(env: NodeJS.ProcessEnv = process.env): AppConfig {
 
@@ -11,6 +12,7 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): AppConfig {
     let maxContextTokens: number | undefined
     let thinkDefault: boolean | undefined
     let toolTimeoutMs: number | undefined
+    let maxReactSteps: number | undefined
 
     if (env.AGENT_MAX_CONTEXT_TOKENS === "" || env.AGENT_MAX_CONTEXT_TOKENS === undefined) {
         maxContextTokens = DEFAULT_MAX_CONTEXT_TOKENS
@@ -22,6 +24,16 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): AppConfig {
         toolTimeoutMs = DEFAULT_TOOL_TIMEOUT_MS
     } else {
         toolTimeoutMs = parseInt(env.AGENT_TOOL_TIMEOUT_MS as string)
+    }
+
+    if (env.AGENT_MAX_REACT_STEPS === "" || env.AGENT_MAX_REACT_STEPS === undefined) {
+        maxReactSteps = DEFAULT_MAX_REACT_STEPS
+    } else {
+        maxReactSteps = parseInt(env.AGENT_MAX_REACT_STEPS as string)
+
+        if (Number.isNaN(maxReactSteps) || maxReactSteps <= 0) {
+            errors.push(`AGENT_MAX_REACT_STEPS must be a positive numeric integer`)
+        }
     }
 
     if (env.AGENT_THINK_MODE !== "" && env.AGENT_THINK_MODE !== undefined) {
@@ -44,7 +56,8 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): AppConfig {
             systemPrompt: env.AGENT_SYSTEM_PROMPT || DEFAULT_SYSTEM_PROMPT,
             maxContextTokens,
             projectRoot: resolve(env.AGENT_PROJECT_ROOT === "" || env.AGENT_PROJECT_ROOT === undefined ? process.cwd() : env.AGENT_PROJECT_ROOT),
-            toolTimeoutMs
+            toolTimeoutMs,
+            maxReactSteps
         },
         logging: {
             level: env.LOG_LEVEL as LogLevel

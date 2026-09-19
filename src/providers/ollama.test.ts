@@ -239,7 +239,8 @@ describe('createProvider', () => {
             systemPrompt: "sys",
             maxContextTokens: 1000,
             projectRoot: process.cwd(),
-            toolTimeoutMs: 30000
+            toolTimeoutMs: 30000,
+            maxReactSteps: 8
         },
         logging: { level: 'info' },
         tools: { enabled: [] }

@@ -2,7 +2,7 @@ import { loadConfig } from "../config/loadConfig.js";
 import type { AppConfig } from "../config/types.js";
 import * as readline from 'node:readline';
 import { createProvider } from "../providers/factory.js";
-import { appendAssistantMessage, appendUserMessage, createConversation, removeLastMessage, toMessages, type Conversation } from "../agent/conversation.js";
+import { appendAssistantMessage, appendToolMessage, appendUserMessage, createConversation, removeLastMessage, rollbackTo, toMessages, type Conversation } from "../agent/conversation.js";
 import type { ChatOptions, ChatProvider, ToolCall } from "../providers/types.js";
 import { truncateToFit } from "../agent/contextWindow.js";
 import { ToolRegistry } from "../tools/registry.js";
@@ -103,7 +103,7 @@ export class AgentREPL {
         })
     }
 
-    private async handleToolCalls(toolCalls: ToolCall[]): Promise<string> {
+    private async handleToolCalls(toolCalls: ToolCall[]): Promise<ToolResult[]> {
 
         //Classify the tool calls to determine which ones need confirmation
         const toolCallResults: (ToolResult | { isError: true; content: string })[] = Array(toolCalls.length).fill(false)
@@ -167,10 +167,64 @@ export class AgentREPL {
             }
         }
 
-        return toolCallResults.map(result => result.content).join("\n")
+        return toolCallResults
     }
 
-    private onLineInputFn(input: string) {
+    private async runReActLoop(userMessage: string): Promise<void> {
+
+        appendUserMessage(this.conversation, userMessage)
+
+        const droppedPairs = truncateToFit(this.conversation, this.config.agent.maxContextTokens) //Truncate the conversation to fit within the max context tokens
+        if (droppedPairs > 0) {
+            console.log(`Dropped ${droppedPairs} old turn${droppedPairs > 1 ? 's' : ''} to fit within max context tokens.`)
+        }
+        
+        this.rl.pause() //Pause the prompt while waiting for the provider response
+
+        //Call the provider's chat method with the conversation messages, handle the response, and re-prompt
+        const chatOptions: ChatOptions = { tools: this.toolRegistry.getToolDefinitions() }
+        const think = this.thinkOverride ?? this.config.agent.thinkDefault
+
+        if (think != undefined) {
+            chatOptions.think = think
+        }
+
+        for (let step = 0; step < this.config.agent.maxReactSteps; step++) {
+            try {
+                const response = await this.provider.chat(toMessages(this.conversation), chatOptions)
+                
+                if (response.finishReason !== 'tool_calls') {
+                    appendAssistantMessage(this.conversation, response.content)
+                    console.log(response.content)
+                    return
+                }
+
+                if (response.toolCalls === undefined) {
+                    throw new Error("Tool calls are undefined")
+                }
+
+                appendAssistantMessage(this.conversation, response.content, response.toolCalls)
+                const toolResults = await this.handleToolCalls(response.toolCalls)
+
+                for (const [i] of toolResults.entries()) {
+                    const content = (toolResults[i] as any).content
+                    const toolName = (response.toolCalls[i] as any).name
+                    appendToolMessage(this.conversation, toolName, content)
+                    console.log(content)
+                }
+
+            } catch (e: any) {
+                throw new Error(e.message)
+            }
+
+            if ((step + 1) == this.config.agent.maxReactSteps) {
+                appendAssistantMessage(this.conversation, "the step limit was reached without a final answer")
+                return
+            }
+        }
+    }
+
+    private async onLineInputFn(input: string) {
 
         //If we're currently awaiting user approval for a tool call, ignore any new input until the approval process is complete
         if (this.awaitingApproval) {
@@ -198,41 +252,15 @@ export class AgentREPL {
             this.rl.prompt()
             return
         }
-
-        //Append the user message to the conversation history
-        appendUserMessage(this.conversation, message)
-
-        const droppedPairs = truncateToFit(this.conversation, this.config.agent.maxContextTokens) //Truncate the conversation to fit within the max context tokens
-        if (droppedPairs > 0) {
-            console.log(`Dropped ${droppedPairs} old turn${droppedPairs > 1 ? 's' : ''} to fit within max context tokens.`)
-        }
-
-        this.rl.pause() //Pause the prompt while waiting for the provider response
-
-        //Call the provider's chat method with the conversation messages, handle the response, and re-prompt
-        const chatOptions: ChatOptions = { tools: this.toolRegistry.getToolDefinitions() }
-        const think = this.thinkOverride ?? this.config.agent.thinkDefault
-
-        if (think != undefined) {
-            chatOptions.think = think
-        }
-
-        this.provider.chat(toMessages(this.conversation), chatOptions).then(async (response) => {
-
-            let content: string = response.content
-            if (response.finishReason === "tool_calls" && response.toolCalls?.length) {
-                content = await this.handleToolCalls(response.toolCalls)
-            }
-
-            appendAssistantMessage(this.conversation, content) //Append the assistant's response to the conversation history
-            console.log(content) //Print the assistant's response to the console
-        }).catch(e => {
-            removeLastMessage(this.conversation) //Roll back the user message that failed to get a response
+        
+        this.runReActLoop(message).catch(e => {
+            rollbackTo(this.conversation, this.conversation.history.length)
             console.error("Error:", e.message)
         }).finally(() => {
             this.rl.resume() //Resume the prompt after the provider call is done (success or failure)
             this.rl.prompt() //Re-prompt after the provider call is done (success or failure)
         })
+
     }
 
 }

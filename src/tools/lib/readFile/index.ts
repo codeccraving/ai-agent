@@ -6,7 +6,7 @@ export function createReadFileTool(projectRoot: string): Tool {
 
     return {
         name: 'readFile',
-        description: 'Reads the contents of a file.',
+        description: 'Reads the full contents of a text file at the given path, relative to the project root. Prefer this over shell commands (e.g. cat, npm ls) for inspecting a file\'s contents.',
         parameters: {
             type: 'object',
             required: ['path'],

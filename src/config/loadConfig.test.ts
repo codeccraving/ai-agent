@@ -1,6 +1,6 @@
 // src/config/loadConfig.test.ts
 import { describe, it, expect } from 'vitest';
-import { DEFAULT_SYSTEM_PROMPT, loadConfig, DEFAULT_MAX_CONTEXT_TOKENS, DEFAULT_TOOL_TIMEOUT_MS } from './loadConfig.js';
+import { DEFAULT_SYSTEM_PROMPT, loadConfig, DEFAULT_MAX_CONTEXT_TOKENS, DEFAULT_TOOL_TIMEOUT_MS, DEFAULT_MAX_REACT_STEPS } from './loadConfig.js';
 import { resolve } from 'node:path';
 
 // Baseline valid env — each test overrides only what it's testing
@@ -32,7 +32,8 @@ describe('loadConfig', () => {
                 maxContextTokens: DEFAULT_MAX_CONTEXT_TOKENS,
                 thinkDefault: undefined,
                 projectRoot: process.cwd(),
-                toolTimeoutMs: DEFAULT_TOOL_TIMEOUT_MS
+                toolTimeoutMs: DEFAULT_TOOL_TIMEOUT_MS,
+                maxReactSteps: DEFAULT_MAX_REACT_STEPS
             },
             logging: {
                 level: 'info',
@@ -308,5 +309,33 @@ describe('loadConfig', () => {
         try { loadConfig(buildEnv({ AGENT_TOOL_TIMEOUT_MS: '-100' })) } catch (e) { thrownError = e as Error }
         expect(thrownError).toBeDefined()
         expect(thrownError!.message).toContain("AGENT_TOOL_TIMEOUT_MS")
+    })
+
+    it('uses AGENT_MAX_REACT_STEPS when it is set', () => {
+        const config = loadConfig(buildEnv({ AGENT_MAX_REACT_STEPS: '3' }))
+        expect(config.agent.maxReactSteps).toBe(3)
+    })
+
+    it('falls back to DEFAULT_MAX_REACT_STEPS when AGENT_MAX_REACT_STEPS is unset', () => {
+        const config = loadConfig(buildEnv({ AGENT_MAX_REACT_STEPS: undefined }))
+        expect(config.agent.maxReactSteps).toBe(DEFAULT_MAX_REACT_STEPS)
+    })
+
+    it('rejects a non-numeric AGENT_MAX_REACT_STEPS', () => {
+        let thrownError: Error
+        try { loadConfig(buildEnv({ AGENT_MAX_REACT_STEPS: 'abc' })) } catch (e) { thrownError = e as Error }
+        expect(thrownError!.message).toContain("AGENT_MAX_REACT_STEPS")
+    })
+
+    it('rejects a zero AGENT_MAX_REACT_STEPS', () => {
+        let thrownError: Error
+        try { loadConfig(buildEnv({ AGENT_MAX_REACT_STEPS: '0' })) } catch (e) { thrownError = e as Error }
+        expect(thrownError!.message).toContain("AGENT_MAX_REACT_STEPS")
+    })
+
+    it('rejects a negative AGENT_MAX_REACT_STEPS', () => {
+        let thrownError: Error
+        try { loadConfig(buildEnv({ AGENT_MAX_REACT_STEPS: '-1' })) } catch (e) { thrownError = e as Error }
+        expect(thrownError!.message).toContain("AGENT_MAX_REACT_STEPS")
     })
 });

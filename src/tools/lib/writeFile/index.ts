@@ -6,7 +6,7 @@ export function createWriteFileTool(projectRoot: string): Tool {
 
     return {
         name: 'writeFile',
-        description: 'Reads the contents of a file.',
+        description: 'Writes content to a file at the given path, relative to the project root — creates it if missing, overwrites it if present. Supports a dry-run mode that reports what would be written without touching the file. Does not return the file\'s existing contents.',
         parameters: {
             type: 'object',
             required: ['path', 'content'],

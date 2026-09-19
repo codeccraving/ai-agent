@@ -13,7 +13,7 @@ const DEFAULT_TIMEOUT_MS = 30_000;
 export function createRunShellCommandTool(projectRoot: string, defaultTimeoutMs = DEFAULT_TIMEOUT_MS): Tool {
     return {
         name: "runShellCommand",
-        description: `Runs an allow-listed command (${ALLOWED_COMMANDS.join(", ")}) inside the project root, with a timeout and captured output.`,
+        description: `Runs an allow-listed command (${ALLOWED_COMMANDS.join(", ")}) inside the project root, with a timeout and captured output. Use this for builds, scripts, and these specific tools directly — not for reading or writing file contents; use readFile/writeFile for that.`,
         parameters: {
             type: "object",
             required: ["command"],

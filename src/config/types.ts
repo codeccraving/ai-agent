@@ -11,6 +11,7 @@ export interface AppConfig {
         thinkDefault?: boolean
         projectRoot: string
         toolTimeoutMs: number
+        maxReactSteps: number
     }
     logging: {
         level: LogLevel
