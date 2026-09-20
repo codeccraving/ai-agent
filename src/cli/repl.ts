@@ -172,13 +172,14 @@ export class AgentREPL {
 
     private async runReActLoop(userMessage: string): Promise<void> {
 
+        const turnStart = this.conversation.history.length
         appendUserMessage(this.conversation, userMessage)
 
         const droppedPairs = truncateToFit(this.conversation, this.config.agent.maxContextTokens) //Truncate the conversation to fit within the max context tokens
         if (droppedPairs > 0) {
             console.log(`Dropped ${droppedPairs} old turn${droppedPairs > 1 ? 's' : ''} to fit within max context tokens.`)
         }
-        
+
         this.rl.pause() //Pause the prompt while waiting for the provider response
 
         //Call the provider's chat method with the conversation messages, handle the response, and re-prompt
@@ -192,7 +193,7 @@ export class AgentREPL {
         for (let step = 0; step < this.config.agent.maxReactSteps; step++) {
             try {
                 const response = await this.provider.chat(toMessages(this.conversation), chatOptions)
-                
+
                 if (response.finishReason !== 'tool_calls') {
                     appendAssistantMessage(this.conversation, response.content)
                     console.log(response.content)
@@ -214,6 +215,7 @@ export class AgentREPL {
                 }
 
             } catch (e: any) {
+                rollbackTo(this.conversation, turnStart)
                 throw new Error(e.message)
             }
 
@@ -252,9 +254,8 @@ export class AgentREPL {
             this.rl.prompt()
             return
         }
-        
+
         this.runReActLoop(message).catch(e => {
-            rollbackTo(this.conversation, this.conversation.history.length)
             console.error("Error:", e.message)
         }).finally(() => {
             this.rl.resume() //Resume the prompt after the provider call is done (success or failure)

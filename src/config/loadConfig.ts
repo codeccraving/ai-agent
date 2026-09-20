@@ -30,10 +30,10 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): AppConfig {
         maxReactSteps = DEFAULT_MAX_REACT_STEPS
     } else {
         maxReactSteps = parseInt(env.AGENT_MAX_REACT_STEPS as string)
+    }
 
-        if (Number.isNaN(maxReactSteps) || maxReactSteps <= 0) {
-            errors.push(`AGENT_MAX_REACT_STEPS must be a positive numeric integer`)
-        }
+    if (Number.isNaN(maxReactSteps) || maxReactSteps <= 0) {
+        errors.push(`AGENT_MAX_REACT_STEPS must be a positive numeric integer`)
     }
 
     if (env.AGENT_THINK_MODE !== "" && env.AGENT_THINK_MODE !== undefined) {
