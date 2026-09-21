@@ -172,13 +172,14 @@ export class AgentREPL {
 
     private async runReActLoop(userMessage: string): Promise<void> {
 
-        const turnStart = this.conversation.history.length
         appendUserMessage(this.conversation, userMessage)
 
         const droppedPairs = truncateToFit(this.conversation, this.config.agent.maxContextTokens) //Truncate the conversation to fit within the max context tokens
         if (droppedPairs > 0) {
             console.log(`Dropped ${droppedPairs} old turn${droppedPairs > 1 ? 's' : ''} to fit within max context tokens.`)
         }
+
+        const turnStart = this.conversation.history.length // in case of error while in loop
 
         this.rl.pause() //Pause the prompt while waiting for the provider response
 
