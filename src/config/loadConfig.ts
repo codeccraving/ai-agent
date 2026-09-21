@@ -31,7 +31,7 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): AppConfig {
     } else {
         maxReactSteps = parseInt(env.AGENT_MAX_REACT_STEPS as string)
     }
-
+    
     if (Number.isNaN(maxReactSteps) || maxReactSteps <= 0) {
         errors.push(`AGENT_MAX_REACT_STEPS must be a positive numeric integer`)
     }

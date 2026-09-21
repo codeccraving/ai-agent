@@ -222,6 +222,7 @@ export class AgentREPL {
 
             if ((step + 1) == this.config.agent.maxReactSteps) {
                 appendAssistantMessage(this.conversation, "the step limit was reached without a final answer")
+                console.log("steps limit reached")
                 return
             }
         }

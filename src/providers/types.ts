@@ -74,4 +74,4 @@ export class ProviderError extends Error {
 }
 
 export const DEFAULT_TEMPERATURE = 0.7
-export const DEFAULT_TIMEOUT_MS = 90_000
+export const DEFAULT_TIMEOUT_MS = 120_000
